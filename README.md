@@ -22,10 +22,12 @@ Requisitos: Python 3.10 o superior (probado con 3.13).
 4. Instalar las demás librerías que usan los scripts:
 
    ```bash
-   pip install matplotlib
+   pip install matplotlib openpyxl
    ```
 
-Versiones con las que se ha probado: `mujoco` 3.16.0, `numpy` 2.2.4, `matplotlib` 3.10.1.
+   `openpyxl` solo hace falta para `preparar_datos_marcha.py`, que lee los Excel originales de marcha.
+
+Versiones con las que se ha probado: `mujoco` 3.16.0, `numpy` 2.2.4, `matplotlib` 3.10.1, `openpyxl` 3.1.5.
 
 Para comprobar que todo quedó bien instalado:
 
@@ -51,14 +53,28 @@ python scripts/modelo_nino.py --ver pc --escenario severo   # sin_acortamiento |
 
 En `modelos/pierna_nino/` está la pierna derecha del niño como XML independiente (no necesita `myo_sim`), un archivo por caso: `pierna_nino_sano.xml`, `pierna_nino_pc_sin_acortamiento.xml`, `pierna_nino_pc_moderado.xml` y `pierna_nino_pc_severo.xml`. Tienen la pelvis fija, los 40 músculos de la pierna, dos IMU (muslo y pierna), cámaras y los keyframes `home` y `popliteo`.
 
-Los casos de PC tienen además una versión con exoesqueleto (`pierna_nino_pc_<escenario>_exo.xml`): motor AK60-6 coaxial con la rodilla, barras laterales, valvas posteriores y almohadilla anterior (0,97 kg). El actuador `exo_rodilla` da torque en la rodilla, en N·m: positivo es extensor y se satura a ±6 N·m.
+Los casos de PC tienen además una versión con exoesqueleto (`pierna_nino_pc_<escenario>_exo.xml`): motor AK60-6 coaxial con la rodilla, barras laterales, valvas posteriores, almohadilla anterior y articulación libre del tobillo (1,0 kg). El actuador `exo_rodilla` da torque en la rodilla, en N·m: positivo es extensor y se satura a ±6 N·m.
 
 ```bash
 python -m mujoco.viewer --mjcf=modelos/pierna_nino/pierna_nino_sano.xml   # abrir un caso
 python scripts/exportar_pierna.py                                         # regenerarlos tras cambiar modelo_nino.py
+python scripts/mover_pierna.py --caso pc_moderado_exo                     # verla moverse: asistencia ON/OFF cada 2 s
 ```
 
 Los XML se generan: no se editan a mano.
+
+### Ciclo de marcha
+
+`marcha.py` mueve la pierna siguiendo los ángulos medidos en cada % del ciclo de marcha (la pelvis está fija, así que camina en el aire):
+
+```bash
+python scripts/marcha.py --caso sano              # Senden, 3–6 años, lenta
+python scripts/marcha.py --caso pc_moderado       # rodilla de P4 (Lerner 2017)
+python scripts/marcha.py --caso pc_moderado_exo   # + perfil de torque del exo de Lerner
+python scripts/marcha.py --caso sano --lento 3    # en cámara lenta
+```
+
+De P4 solo se tiene la rodilla: la cadera y el tobillo de los casos de PC son los de Senden (supuesto). Las curvas están en `data/marcha/`. Para regenerarlas desde los Excel originales (Senden en OSF 3xqew y el digitalizado de Lerner), corre `python scripts/preparar_datos_marcha.py`.
 
 Para usar el modelo del niño desde otro script en `scripts/`:
 

@@ -29,6 +29,10 @@ python scripts/dif_legs.py                       # compare joints/muscles of myo
 python scripts/prueba_poplitea.py                # popliteal-angle test: table + plot (writes prueba_poplitea.png to CWD)
 python scripts/prueba_poplitea.py --ver severo   # also show the final pose (normal|moderado|severo)
 python scripts/modelo_nino.py [--ver sano|pc --escenario moderado]   # child model: healthy + CP scenarios table
+python scripts/exportar_pierna.py                # regenerate modelos/pierna_nino/*.xml
+python scripts/mover_pierna.py --caso pc_moderado_exo   # viewer demo: hip held at 90°, assistance ON/OFF every 2 s
+python scripts/marcha.py --caso pc_moderado_exo [--lento 3]   # replay a gait cycle (prescribed kinematics)
+python scripts/preparar_datos_marcha.py          # rebuild data/marcha/*.csv from the original xlsx (needs openpyxl)
 ```
 
 There are no tests or linters configured for this repo's own code.
@@ -45,6 +49,13 @@ There are no tests or linters configured for this repo's own code.
   - `exportar_pierna.py` builds the leg-only model by trimming the spec: it deletes the left leg, the torso, the free `root` joint (so the pelvis is fixed), the left-right contact pairs and the MyoSuite scenery. Then it adds the IMU sites and sensors, cameras and keyframes. `spec.to_xml()` output needs `_limpiar_xml`: myo_sim leaves an unnamed nested `<default>` that MuJoCo rejects on reload. After any change, check that the exported XML reproduces `cargar_nino` (muscle params, masses, `angulo_popliteo`).
   - `_exo` variants (CP only) come from `_agregar_exo`. The exo parts are geoms in jointless child bodies `exo_muslo` (of `femur_r`) and `exo_pierna` (of `tibia_r`), so MuJoCo derives their inertia from the geoms. They are placed in the world at the extended pose and transformed into the bone frames; box orientations must be built as x, y, x×y to stay a proper rotation, because the tibia axis points down. Geom color must be set in `rgba`, since the MyoLeg default class's rgba overrides material color. Actuator `exo_rodilla` is a joint motor on `knee_angle_r` with gear −1, so positive ctrl means extensor torque in N·m, saturated at ±6. The torque-speed curve, cutoff speed, delay and state machine belong in the controller, not the XML. Motor size (Ø79 × 39.5 mm), mass (368 g) and rotor inertia come from the AK60-6 V1.1 KV140 datasheet. The rotor inertia is reflected as J·N² = 8.77e-4 kg·m² and added to the knee `armature`, so the motor body carries only its mass. The split of the remaining ≤ 0.632 kg among bars, valvas, pad and ankle piece is an assumption.
   - Joint `armature`/`damping` are already scaled by s_M·s_L² in `modelo_nino._escalar`; the knee ends at 0.0013 kg·m². The `armature="0.01"` in the exported default class is overridden per joint. Don't "fix" it by scaling again.
+  - MyoLeg has no ligaments or muscle tone. With zero activation, hip adduction/rotation are almost free, and the hanging leg twists (hip rotation −20° to −35°, the adult model too) while the toes droop to the −30° limit. Any test that holds the hip must hold all three hip DOFs, not just flexion; otherwise the thigh twists into the joint limits as the knee moves (this was a bug in `mover_pierna.py`).
+  - Gait data lives in `data/marcha/` as CSVs with `#` comment headers.
+    - `senden_3a6_lenta.csv`: typical child, Senden 3–6 y slow walking (hip flex/add/rot, knee, ankle).
+    - `lerner_P4.csv`: P4 knee angle without exo plus Lerner's exo torque profile in N·m. Only the knee exists for P4.
+    - Plug-in Gait sign conventions match MyoLeg's (flexion, adduction, internal rotation and dorsiflexion positive).
+    - `marcha.py` is a kinematic replay: it sets qpos (including the coupled knee DOFs) and calls `mj_forward`, with no dynamics. For CP cases it uses Senden's hip and ankle as a stated assumption, and the exo torque is only applied/displayed, so it doesn't change the motion.
+    - Stride times: 0.952 s for the typical child, 1.14 s for P4.
   - The knee joint range is 0–120°, so the model can't reproduce Senden's +5° hyperextension or 148° passive flexion.
   - `torque_extensor_max` computes effective moment arms as dL/dθ with all coupled DOFs moving. The quadriceps inserts on the patella, which moves through its own coupled DOFs, so the `knee_angle` column of `actuator_moment` alone is not enough for it.
 - `scripts/prueba_poplitea.py` does *static* analysis, not dynamic simulation: it sets `qpos` directly and calls `mj_forward`, then reads passive muscle force (activation 0) × moment arm about the knee.
