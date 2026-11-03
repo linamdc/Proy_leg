@@ -20,10 +20,13 @@
      que siguen a knee_angle_r por las igualdades de <equality>; si se pone la
      pose a mano en qpos, hay que calcularlos con esos polinomios.
 
-     EXOESQUELETO DE RODILLA (0.97 kg): motor AK60-6 coaxial con la rodilla por el lado
-     lateral (368 g), barras laterales, valvas posteriores de 8 cm al
-     62.5% de cada segmento y almohadilla anterior sobre la rótula. Piezas rígidas
-     en los cuerpos exo_muslo (hijo de femur_r) y exo_pierna (hijo de tibia_r).
+     EXOESQUELETO DE RODILLA (0.998 kg): motor AK60-6 coaxial con la rodilla por el lado
+     lateral (368 g, Ø79 x 39.5 mm), barras laterales, valvas
+     posteriores de 8 cm al 62.5% de cada segmento, almohadilla anterior sobre
+     la rótula y articulación lateral del tobillo, libre (sin tope, como en Lerner). Piezas rígidas en los cuerpos
+     exo_muslo (hijo de femur_r) y exo_pierna (hijo de tibia_r).
+     Inercia del rotor reflejada en la rodilla: 8.77e-04 kg·m², sumada al armature
+     de knee_angle_r.
      Actuador "exo_rodilla": torque en knee_angle_r, ctrl en N·m, POSITIVO = EXTENSOR,
      saturado a ±6 N·m. Sensor "exo_torque". Tope mecánico de flexión a 100°.
      La curva torque-velocidad, la velocidad de corte y el retraso van en el controlador.
@@ -203,7 +206,7 @@
                 <inertial pos="-0.00340505 -0.119177 0.00170252" quat="0.70204 -0.711847 0.0203385 0" mass="1.04408" diaginertia="0.00983201 0.00983201 0.000879729" />
                 <joint name="knee_angle_translation2_r" type="slide" range="5.23869e-11 0.00462542" armature="0.00274758" damping="0.137379" axis="0.992246 0.123982 -0.00878916" />
                 <joint name="knee_angle_translation1_r" type="slide" range="6.49501e-08 0.00108882" armature="0.00274758" damping="0.137379" axis="-0.124293 0.989762 -0.0701648" />
-                <joint name="knee_angle_r" range="0.0872665 1.74533" armature="0.00127425" damping="0.0637127" axis="-3.98373e-10 -0.0707131 -0.997497" />
+                <joint name="knee_angle_r" range="0.0872665 1.74533" armature="0.00215085" damping="0.0637127" axis="-3.98373e-10 -0.0707131 -0.997497" />
                 <joint name="knee_angle_rotation2_r" range="-0.00167821 0.0335354" armature="0.00127425" damping="0.0637127" axis="0.992246 0.123982 -0.00878916" />
                 <joint name="knee_angle_rotation3_r" range="-0.262788 0.262788" armature="0.00127425" damping="0.0637127" axis="-0.124293 0.989762 -0.0701648" />
                 <geom name="tibia1_col_r" class="myolegs_coll" size="0.0381365 0.0477997" pos="-0.00340505 -0.0476707 0.000851262" quat="0.700782 -0.711563 0.0508259 0" mass="0" />
@@ -329,8 +332,9 @@
                   </body>
                 </body>
                 <body name="exo_pierna">
-                  <geom name="exo_pierna_barra" size="0.006 0.102183" pos="-0.00255662 -0.102151 0.0501365" quat="0.707107 -0.706886 0.0176721 0" type="capsule" group="1" rgba="0.72 0.74 0.78 1" mass="0.1" material="exo_aluminio" />
-                  <geom name="exo_pierna_valva" size="0.0381365 0.002 0.04" pos="-0.0443803 -0.169249 -2.26644e-06" quat="-0.493699 0.506195 0.493726 0.506224" type="box" group="1" rgba="0.16 0.47 0.84 0.9" mass="0.15" material="exo_valva" />
+                  <geom name="exo_pierna_barra" size="0.006 0.136244" pos="-0.00340788 -0.136202 0.0501365" quat="0.707107 -0.706886 0.0176721 0" type="capsule" group="1" rgba="0.72 0.74 0.78 1" mass="0.1" material="exo_aluminio" />
+                  <geom name="exo_pierna_valva" size="0.0381365 0.002 0.04" pos="-0.0443803 -0.169249 -2.26644e-06" quat="-0.493699 0.506195 0.493726 0.506224" type="box" group="1" rgba="0.16 0.47 0.84 0.9" mass="0.12" material="exo_valva" />
+                  <geom name="exo_tobillo" size="0.015 0.0075" pos="-0.00681335 -0.272404 0.0576365" quat="2.82276e-05 -0.0104363 0.999946 0" type="cylinder" group="1" rgba="0.15 0.15 0.17 1" mass="0.1" material="exo_motor" />
                 </body>
               </body>
               <body name="patella_r" pos="-0.00550937 -0.277825 0">
@@ -351,9 +355,9 @@
               </body>
               <body name="exo_muslo">
                 <geom name="exo_muslo_barra" size="0.006 0.103282" pos="-3.44899e-06 -0.172136 0.0570891" quat="0.706 0.708212 -8.05533e-07 0" type="capsule" group="1" rgba="0.72 0.74 0.78 1" mass="0.12" material="exo_aluminio" />
-                <geom name="exo_muslo_valva" size="0.0456276 0.002 0.04" pos="-0.0476277 -0.103281 -0.000325927" quat="-0.499985 0.499986 0.500015 0.500014" type="box" group="1" rgba="0.16 0.47 0.84 0.9" mass="0.18" material="exo_valva" />
-                <geom name="exo_motor" size="0.04 0.02" pos="-4.30034e-06 -0.275417 0.069766" quat="2.82276e-05 -0.0104363 0.999946 0" type="cylinder" group="1" rgba="0.15 0.15 0.17 1" mass="0.368" material="exo_motor" />
-                <geom name="exo_almohadilla" size="0.04 0.006 0.025" pos="0.0516274 -0.230418 -0.000717827" quat="-0.499985 0.499986 0.500015 0.500014" type="box" group="1" rgba="0.16 0.47 0.84 0.9" mass="0.05" material="exo_valva" />
+                <geom name="exo_muslo_valva" size="0.0456276 0.002 0.04" pos="-0.0476277 -0.103281 -0.000325927" quat="-0.499985 0.499986 0.500015 0.500014" type="box" group="1" rgba="0.16 0.47 0.84 0.9" mass="0.15" material="exo_valva" />
+                <geom name="exo_motor" size="0.0395 0.01975" pos="-4.28623e-06 -0.275417 0.069516" quat="2.82276e-05 -0.0104363 0.999946 0" type="cylinder" group="1" rgba="0.15 0.15 0.17 1" mass="0.368" material="exo_motor" />
+                <geom name="exo_almohadilla" size="0.04 0.006 0.025" pos="0.0516274 -0.230418 -0.000717827" quat="-0.499985 0.499986 0.500015 0.500014" type="box" group="1" rgba="0.16 0.47 0.84 0.9" mass="0.04" material="exo_valva" />
               </body>
             </body>
           </body>

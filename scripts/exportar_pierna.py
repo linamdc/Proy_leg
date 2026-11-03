@@ -70,30 +70,41 @@ CASOS = [("sano", None, False)] + [("pc", e, exo) for e in mn.ESCENARIOS_PC for 
 # Exoesqueleto (sección 4 y 5 del documento)
 # ----------------------------------------------------------------------------
 
-# Actuador CubeMars AK60-6 V1.1: 3 N·m continuo, 9 N·m pico, 368 g [6].
-# Se satura por software a 6 N·m (torque pico máximo del requerimiento).
+# Actuador CubeMars AK60-6 V1.1 KV140 (hoja técnica en cubemars.com): 3 N·m
+# continuo, 9 N·m pico, reducción 6:1. Se satura por software a 6 N·m
+# (torque pico máximo del requerimiento).
 TORQUE_MAX_EXO = 6.0       # N·m
-MASA_MOTOR = 0.368         # kg
-# Medidas aproximadas del motor: verificar con la hoja de datos.
-DIAMETRO_MOTOR = 0.080     # m
-ANCHO_MOTOR = 0.040        # m
-# Inercia reflejada del rotor en la rodilla (J_rotor · N², kg·m²): se suma a
-# la armadura de knee_angle_r. Pendiente: J_rotor de la hoja de datos.
-INERCIA_REFLEJADA = 0.0
+MASA_MOTOR = 0.368         # kg (la tabla técnica dice 368 g; en otra parte de la página, 358 g)
+# Plano 2D: Ø79 mm y 39,5 mm de largo total (29 mm de cuerpo + cubo de salida).
+DIAMETRO_MOTOR = 0.079     # m
+ANCHO_MOTOR = 0.0395       # m
+# Inercia del rotor reflejada en la rodilla, J_rotor · N². Va como armature de
+# knee_angle_r, que representa justamente eso; el cuerpo del motor lleva solo
+# su masa. Se suma al armature que ya tiene la rodilla (0,01 de MyoLeg escalado
+# por s_M·s_L² en modelo_nino.py ≈ 0,0013 kg·m²).
+INERCIA_ROTOR = 2.435e-5   # kg·m² (243,5 g·cm²)
+REDUCCION = 6
+INERCIA_REFLEJADA = INERCIA_ROTOR * REDUCCION**2   # 8,77e-4 kg·m²
 
-# Reparto supuesto del resto de la masa; con el motor suma 0,97 kg (≤ 1,0 kg).
+# Reparto supuesto del resto de la masa: hasta 0,632 kg para que con el motor
+# quede en ≤ 1,0 kg por pierna. El único dato real es el del motor.
 MASA_BARRA_MUSLO = 0.12    # kg, barra lateral (aluminio)
-MASA_VALVA_MUSLO = 0.18    # kg, valva posterior termoplástica con correa
+MASA_VALVA_MUSLO = 0.15    # kg, valva posterior termoplástica con correa
 MASA_BARRA_PIERNA = 0.10
-MASA_VALVA_PIERNA = 0.15
-MASA_ALMOHADILLA = 0.05    # kg, almohadilla anterior sobre la rótula
+MASA_VALVA_PIERNA = 0.12
+MASA_ALMOHADILLA = 0.04    # kg, almohadilla anterior sobre la rótula
+MASA_TOBILLO = 0.10        # kg, articulación lateral del tobillo, libre (sin tope), como en Lerner
+DIAMETRO_TOBILLO = 0.030   # m
+ANCHO_TOBILLO = 0.015      # m
 
 # Valvas de 8 cm de alto, centradas entre el 55 % y el 70 % de cada segmento
 # medido desde la rodilla (recomendación de la caracterización del segmento).
 ALTO_VALVA = 0.08          # m
 POSICION_VALVA = 0.625     # fracción del segmento desde la rodilla
 ESPESOR_VALVA = 0.004      # m
-LARGO_BARRA = 0.75         # fracción del segmento que cubre la barra lateral
+# Fracción de cada segmento que cubre la barra lateral, desde la rodilla. La
+# de la pierna llega hasta el tobillo, donde se une a la articulación del tobillo.
+LARGO_BARRA = {"femur_r": 0.75, "tibia_r": 1.0}
 AREA_ALMOHADILLA = (0.08, 0.05)  # m (mediolateral, proximal-distal): 40 cm²
 
 TOPE_FLEXION_EXO = 100.0   # ° de flexión, tope mecánico (rango 0–100°)
@@ -267,7 +278,7 @@ def _agregar_exo(spec, model, data):
         d_barra = radio + 0.012
         cuerpo.add_geom(name=f"{cuerpo.name}_barra", type=mujoco.mjtGeom.mjGEOM_CAPSULE, size=[0.006, 0, 0],
                         fromto=np.concatenate([local(rodilla + d_barra * lateral),
-                                               local(rodilla + d_barra * lateral + LARGO_BARRA * largo * eje)]),
+                                               local(rodilla + d_barra * lateral + LARGO_BARRA[hueso] * largo * eje)]),
                         mass=m_barra, **estilo("exo_aluminio"))
         # Valva posterior: lámina que cubre la mitad de atrás del segmento.
         centro = rodilla + POSICION_VALVA * largo * eje - (radio + ESPESOR_VALVA / 2) * anterior
@@ -291,6 +302,16 @@ def _agregar_exo(spec, model, data):
                             size=[ancho / 2, 0.006, alto / 2], pos=local(centro),
                             quat=quat(R, lateral, anterior),
                             mass=MASA_ALMOHADILLA, **estilo("exo_valva"))
+        else:
+            # Articulación lateral del tobillo, al final de la barra de la
+            # pierna. Es libre, como en el exoesqueleto de Lerner, para que los
+            # resultados sean comparables: no limita ankle_angle_r y solo
+            # aporta su masa, pegada a la tibia. El estribo del pie no se modela.
+            t0 = rodilla + largo * eje + d_barra * lateral
+            cuerpo.add_geom(name="exo_tobillo", type=mujoco.mjtGeom.mjGEOM_CYLINDER,
+                            size=[DIAMETRO_TOBILLO / 2, 0, 0],
+                            fromto=np.concatenate([local(t0), local(t0 + ANCHO_TOBILLO * lateral)]),
+                            mass=MASA_TOBILLO, **estilo("exo_motor"))
 
     spec.add_material(name="exo_motor", rgba=colores["exo_motor"], specular=0.4, shininess=0.5)
     spec.add_material(name="exo_aluminio", rgba=colores["exo_aluminio"], specular=0.6, shininess=0.7)
@@ -348,12 +369,15 @@ def construir(version, escenario, exo=False):
 
 def _texto_exo():
     masa = (MASA_MOTOR + MASA_BARRA_MUSLO + MASA_VALVA_MUSLO + MASA_BARRA_PIERNA
-            + MASA_VALVA_PIERNA + MASA_ALMOHADILLA)
+            + MASA_VALVA_PIERNA + MASA_ALMOHADILLA + MASA_TOBILLO)
     return f"""
-     EXOESQUELETO DE RODILLA ({masa:.2f} kg): motor AK60-6 coaxial con la rodilla por el lado
-     lateral ({MASA_MOTOR * 1000:.0f} g), barras laterales, valvas posteriores de {ALTO_VALVA * 100:.0f} cm al
-     {POSICION_VALVA:.1%} de cada segmento y almohadilla anterior sobre la rótula. Piezas rígidas
-     en los cuerpos exo_muslo (hijo de femur_r) y exo_pierna (hijo de tibia_r).
+     EXOESQUELETO DE RODILLA ({masa:.3f} kg): motor AK60-6 coaxial con la rodilla por el lado
+     lateral ({MASA_MOTOR * 1000:.0f} g, Ø{DIAMETRO_MOTOR * 1000:.0f} x {ANCHO_MOTOR * 1000:.1f} mm), barras laterales, valvas
+     posteriores de {ALTO_VALVA * 100:.0f} cm al {POSICION_VALVA:.1%} de cada segmento, almohadilla anterior sobre
+     la rótula y articulación lateral del tobillo, libre (sin tope, como en Lerner). Piezas rígidas en los cuerpos
+     exo_muslo (hijo de femur_r) y exo_pierna (hijo de tibia_r).
+     Inercia del rotor reflejada en la rodilla: {INERCIA_REFLEJADA:.2e} kg·m², sumada al armature
+     de knee_angle_r.
      Actuador "exo_rodilla": torque en knee_angle_r, ctrl en N·m, POSITIVO = EXTENSOR,
      saturado a ±{TORQUE_MAX_EXO:.0f} N·m. Sensor "exo_torque". Tope mecánico de flexión a {TOPE_FLEXION_EXO:.0f}°.
      La curva torque-velocidad, la velocidad de corte y el retraso van en el controlador.
