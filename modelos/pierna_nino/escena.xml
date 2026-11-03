@@ -1,0 +1,43 @@
+<!-- Escenario: cielo, piso y luz para la pierna del niño.
+
+     Se incluye desde cada pierna_nino_<caso>.xml con <include file="escena.xml"/>
+     como ÚLTIMO hijo de <mujoco>. Separado en su propio archivo para que los XML
+     de la pierna, que se generan con scripts/exportar_pierna.py, no tengan que
+     cargar con el decorado.
+
+     El piso va dentro de <body name="escenario"> y no suelto en <worldbody>:
+     MuJoCo numera los geoms por cuerpo y el mundo es siempre el cuerpo 0, así
+     que un geom colgado directo del mundo se queda con el id 0 y corre todos los
+     de la pierna un lugar. En su propio cuerpo, declarado al final, el piso se
+     lleva el último id.
+
+     El piso SÍ es sólido: contype=1 y conaffinity=1, igual que el piso original
+     de MyoLeg. Las cápsulas de colisión del pie (contype=1, conaffinity=0) apoyan
+     sobre él; el resto de la pierna no tiene geoms de colisión que lo toquen.
+-->
+<mujoco model="escena">
+  <visual>
+    <!-- Framebuffer fuera de pantalla más grande que el 640x480 por defecto,
+         para poder sacar capturas y video con mujoco.Renderer. -->
+    <global offwidth="1280" offheight="720" azimuth="160" elevation="-15"/>
+    <headlight ambient="0.4 0.4 0.42" diffuse="0.5 0.5 0.5" specular="0.1 0.1 0.1"/>
+    <rgba haze="0.80 0.88 0.95 1"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient"
+             rgb1="0.25 0.45 0.75" rgb2="0.80 0.88 0.95" width="512" height="3072"/>
+    <!-- Con texuniform="true" el lado de cada cuadro es 1 / texrepeat: 10 cm. -->
+    <texture name="damero" type="2d" builtin="checker"
+             rgb1="0.42 0.44 0.47" rgb2="0.70 0.72 0.75" width="512" height="512"/>
+    <material name="damero" texture="damero" texrepeat="10 10" texuniform="true" reflectance="0.05"/>
+  </asset>
+
+  <worldbody>
+    <light name="luz" pos="0 0 2.5" dir="0 0 -1" diffuse="0.5 0.5 0.5" castshadow="false"/>
+    <body name="escenario">
+      <geom name="piso" type="plane" size="0 0 0.05" pos="0 0 0" material="damero"
+            contype="1" conaffinity="1"/>
+    </body>
+  </worldbody>
+</mujoco>

@@ -42,4 +42,27 @@ python scripts/ver_pierna.py                     # abre el visor de MuJoCo con e
 python scripts/dif_legs.py                       # compara articulaciones y músculos de myolegs y myolegs26
 python scripts/prueba_poplitea.py                # prueba del ángulo poplíteo: tabla + gráfica
 python scripts/prueba_poplitea.py --ver severo   # además muestra la pose final (normal | moderado | severo)
+python scripts/modelo_nino.py                    # modelo escalado al niño (P4): tabla de la versión sana y los escenarios de PC
+python scripts/modelo_nino.py --ver sano                    # visor en la pose del ángulo poplíteo
+python scripts/modelo_nino.py --ver pc --escenario severo   # sin_acortamiento | moderado | severo
+```
+
+### Pierna del niño como XML de MuJoCo
+
+En `modelos/pierna_nino/` está la pierna derecha del niño como XML independiente (no necesita `myo_sim`), un archivo por caso: `pierna_nino_sano.xml`, `pierna_nino_pc_sin_acortamiento.xml`, `pierna_nino_pc_moderado.xml` y `pierna_nino_pc_severo.xml`. Tienen la pelvis fija, los 40 músculos de la pierna, dos IMU (muslo y pierna), cámaras y los keyframes `home` y `popliteo`.
+
+```bash
+python -m mujoco.viewer --mjcf=modelos/pierna_nino/pierna_nino_sano.xml   # abrir un caso
+python scripts/exportar_pierna.py                                         # regenerarlos tras cambiar modelo_nino.py
+```
+
+Los XML se generan: no se editan a mano.
+
+Para usar el modelo del niño desde otro script en `scripts/`:
+
+```python
+from modelo_nino import cargar_nino, spec_nino
+model, data = cargar_nino("sano")
+model, data = cargar_nino("pc", "moderado")   # sin_acortamiento | moderado | severo
+spec = spec_nino("pc", "severo")              # MjSpec editable, para agregarle el exoesqueleto antes de compilar
 ```
