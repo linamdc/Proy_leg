@@ -51,6 +51,8 @@ python scripts/modelo_nino.py --ver pc --escenario severo   # sin_acortamiento |
 
 En `modelos/pierna_nino/` está la pierna derecha del niño como XML independiente (no necesita `myo_sim`), un archivo por caso: `pierna_nino_sano.xml`, `pierna_nino_pc_sin_acortamiento.xml`, `pierna_nino_pc_moderado.xml` y `pierna_nino_pc_severo.xml`. Tienen la pelvis fija, los 40 músculos de la pierna, dos IMU (muslo y pierna), cámaras y los keyframes `home` y `popliteo`.
 
+Los casos de PC tienen además una versión con exoesqueleto (`pierna_nino_pc_<escenario>_exo.xml`): motor AK60-6 coaxial con la rodilla, barras laterales, valvas posteriores y almohadilla anterior (0,97 kg). El actuador `exo_rodilla` da torque en la rodilla, en N·m: positivo es extensor y se satura a ±6 N·m.
+
 ```bash
 python -m mujoco.viewer --mjcf=modelos/pierna_nino/pierna_nino_sano.xml   # abrir un caso
 python scripts/exportar_pierna.py                                         # regenerarlos tras cambiar modelo_nino.py
