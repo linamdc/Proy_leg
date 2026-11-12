@@ -1,0 +1,3 @@
+# Steele et al. 2010 (SimTK crouchgait), niño C8.  Generado por preparar_datos_crouch_steele.py
+# masa,factor_peso,zancada,zancada_l,despegue_r,despegue_l,desfase_l,velocidad,rodilla_apoyo_r,rodilla_apoyo_l,tobillo_dedo
+23.31400,1.15695,0.96667,0.97083,65.91954,70.27182,48.27586,0.80550,32.70601,33.39518,0.07472
